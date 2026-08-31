@@ -31,11 +31,11 @@ pipeline {
                 echo "Running SonarQube Analysis"
 
 
-                withSonarQubeEnv('sonar-server') {
+                withSonarQubeEnv('Sonar-server') {
 
                     script {
 
-                        def scannerHome = tool 'sonar-scanner'
+                        def scannerHome = tool 'Sonar-scanner'
 
 
                         sh """
