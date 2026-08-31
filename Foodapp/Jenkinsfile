@@ -1,0 +1,135 @@
+pipeline {
+
+    agent any
+
+
+    environment {
+        SONAR_PROJECT_KEY = "Foodapp"
+    }
+
+
+    stages {
+
+
+        stage('Checkout Code') {
+
+            steps {
+
+                git branch: 'main',
+                credentialsId: 'ArchanaChirmade02',
+                url: 'https://github.com/ArchanaChirmade02/github-jenkins-sonarqube-docker-Pipeline.git'
+
+            }
+        }
+
+
+
+        stage('SonarQube Analysis') {
+
+            steps {
+
+                echo "Running SonarQube Analysis"
+
+
+                withSonarQubeEnv('sonar-server') {
+
+                    script {
+
+                        def scannerHome = tool 'sonar-scanner'
+
+
+                        sh """
+                        
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.sources=.
+
+                        """
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+
+        stage('Deploy To Docker Server') {
+
+            steps {
+
+
+                sshagent(['ubuntu_docker']) {
+
+
+                    sh '''
+
+                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+                    mkdir -p ~/website
+                    "
+
+
+                    scp -o StrictHostKeyChecking=no -r \
+                    Foodapp \
+                    ubuntu@54.91.79.143:~/website/
+
+
+                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+
+                    cd ~/website/Foodapp
+
+
+                    docker rm -f Foodapp-website || true
+
+
+                    docker build -t mywebsite1 .
+
+
+                    docker run -d \
+                    -p 8085:80 \
+                    --name Foodapp-website \
+                    mywebsite1
+
+
+                    "
+
+
+                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+
+                    docker ps
+
+                    "
+
+
+                    '''
+
+                }
+
+            }
+
+        }
+
+
+    }
+
+
+    post {
+
+        success {
+
+            echo "Deployment Successful"
+
+        }
+
+
+        failure {
+
+            echo "Deployment Failed"
+
+        }
+
+    }
+
+}
