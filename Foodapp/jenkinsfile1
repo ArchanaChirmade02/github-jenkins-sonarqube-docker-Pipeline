@@ -12,18 +12,23 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
+                git(
+                    branch: 'main',
                     credentialsId: 'ArchanaChirmade02',
                     url: 'https://github.com/ArchanaChirmade02/github-jenkins-sonarqube-docker-Pipeline.git'
+                )
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
+
                 echo "Running SonarQube Analysis"
 
                 withSonarQubeEnv('Sonar-server') {
+
                     script {
+
                         def scannerHome = tool 'Sonar-scanner'
 
                         sh """
@@ -42,40 +47,35 @@ pipeline {
                 sshagent(['ubuntu_docker']) {
 
                     sh '''
-                        echo "Creating deployment directory on Docker server..."
+                        echo "Creating website directory on Docker server..."
 
-                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} \
-                            "mkdir -p ~/website"
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "mkdir -p ~/website"
 
-                        echo "Copying application to Docker server..."
+                        echo "Copying Foodapp to Docker server..."
 
-                        scp -o StrictHostKeyChecking=no -r \
-                            Foodapp \
-                            ${DOCKER_USER}@${DOCKER_SERVER}:~/website/
+                        scp -o StrictHostKeyChecking=no -r Foodapp ${DOCKER_USER}@${DOCKER_SERVER}:~/website/
 
-                        echo "Building and starting Docker container..."
+                        echo "Building Docker image..."
 
-                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "
-                            cd ~/website/Foodapp &&
-                            docker rm -f Foodapp-website 2>/dev/null || true &&
-                            docker build -t mywebsite1 . &&
-                            docker run -d \
-                                -p 8085:80 \
-                                --name Foodapp-website \
-                                mywebsite1
-                        "
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "cd ~/website/Foodapp && docker rm -f Foodapp-website 2>/dev/null || true && docker build -t mywebsite1 ."
 
-                        echo "Checking running container..."
+                        echo "Starting Docker container..."
 
-                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} \
-                            "docker ps"
-                    }
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "docker run -d -p 8085:80 --name Foodapp-website mywebsite1"
+
+                        echo "Checking Docker container..."
+
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "docker ps"
+
+                        echo "Deployment completed successfully."
+                    '''
                 }
             }
         }
     }
 
     post {
+
         success {
             echo "Deployment Successful"
         }
