@@ -1,0 +1,87 @@
+pipeline {
+
+    agent any
+
+    environment {
+        SONAR_PROJECT_KEY = "Foodapp"
+        DOCKER_SERVER = "98.89.27.214"
+        DOCKER_USER = "ubuntu"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    credentialsId: 'ArchanaChirmade02',
+                    url: 'https://github.com/ArchanaChirmade02/github-jenkins-sonarqube-docker-Pipeline.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo "Running SonarQube Analysis"
+
+                withSonarQubeEnv('Sonar-server') {
+                    script {
+                        def scannerHome = tool 'Sonar-scanner'
+
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                            -Dsonar.sources=.
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deploy To Docker Server') {
+            steps {
+
+                sshagent(['ubuntu_docker']) {
+
+                    sh '''
+                        echo "Creating deployment directory on Docker server..."
+
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} \
+                            "mkdir -p ~/website"
+
+                        echo "Copying application to Docker server..."
+
+                        scp -o StrictHostKeyChecking=no -r \
+                            Foodapp \
+                            ${DOCKER_USER}@${DOCKER_SERVER}:~/website/
+
+                        echo "Building and starting Docker container..."
+
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} "
+                            cd ~/website/Foodapp &&
+                            docker rm -f Foodapp-website 2>/dev/null || true &&
+                            docker build -t mywebsite1 . &&
+                            docker run -d \
+                                -p 8085:80 \
+                                --name Foodapp-website \
+                                mywebsite1
+                        "
+
+                        echo "Checking running container..."
+
+                        ssh -o StrictHostKeyChecking=no ${DOCKER_USER}@${DOCKER_SERVER} \
+                            "docker ps"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment Successful"
+        }
+
+        failure {
+            echo "Deployment Failed"
+        }
+    }
+}
