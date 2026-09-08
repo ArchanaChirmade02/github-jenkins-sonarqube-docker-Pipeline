@@ -66,7 +66,7 @@ pipeline {
 
                     sh '''
 
-                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+                    ssh -o StrictHostKeyChecking=no ubuntu@98.89.27.214"
                     mkdir -p ~/website
                     "
 
@@ -76,7 +76,7 @@ pipeline {
                     ubuntu@54.91.79.143:~/website/
 
 
-                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+                    ssh -o StrictHostKeyChecking=no ubuntu@98.89.27.214"
 
                     cd ~/website/Foodapp
 
@@ -96,7 +96,7 @@ pipeline {
                     "
 
 
-                    ssh -o StrictHostKeyChecking=no ubuntu@54.91.79.143 "
+                    ssh -o StrictHostKeyChecking=no ubuntu@98.89.27.214"
 
                     docker ps
 
